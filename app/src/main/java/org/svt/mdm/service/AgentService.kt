@@ -56,6 +56,7 @@ class AgentService : Service() {
         }
         connectMqtt()
         startLocationLoop()
+        startCommandPollLoop()
         return START_STICKY
     }
 
@@ -78,6 +79,24 @@ class AgentService : Service() {
                 runCatching { agent.pushLocation() }
                     .onFailure { Log.w(TAG, "location push failed: ${it.message}") }
                 delay(LOCATION_INTERVAL_MS)
+            }
+        }
+    }
+
+    /**
+     * Collect and execute queued commands over HTTPS. This is the primary
+     * command channel: it works through the same reverse proxy as the rest of
+     * the API, so it does not require the MQTT broker to be reachable from the
+     * device. When MQTT push is enabled and connected, commands simply arrive
+     * sooner and are already marked delivered, so they won't be polled twice.
+     */
+    private fun startCommandPollLoop() {
+        scope.launch {
+            while (isActive) {
+                runCatching {
+                    agent.drainPendingCommands { ack -> agent.sendAck(ack) }
+                }.onFailure { Log.w(TAG, "command poll failed: ${it.message}") }
+                delay(COMMAND_POLL_INTERVAL_MS)
             }
         }
     }
@@ -118,6 +137,7 @@ class AgentService : Service() {
         private const val CHANNEL_ID = "svt_mdm_agent"
         private const val NOTIFICATION_ID = 1001
         private const val LOCATION_INTERVAL_MS = 5 * 60 * 1000L
+        private const val COMMAND_POLL_INTERVAL_MS = 15 * 1000L
 
         fun start(context: Context) {
             val intent = Intent(context, AgentService::class.java)
