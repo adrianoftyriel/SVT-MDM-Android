@@ -119,6 +119,12 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var caps by remember { mutableStateOf(agent.capabilities()) }
+    var syncStatus by remember { mutableStateOf<String?>(null) }
+    val appVersion = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull() ?: "?"
+    }
 
     val locationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -136,6 +142,7 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
         Text("Enrolled", style = MaterialTheme.typography.headlineSmall)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("App version: $appVersion")
                 Text("Device ID: ${agent.session.deviceId ?: "—"}", fontFamily = FontFamily.Monospace)
                 Text("Server: ${agent.session.serverUrl ?: "—"}")
                 Text("Tier: ${tierOf(caps)}", style = MaterialTheme.typography.titleMedium)
@@ -197,6 +204,29 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
         Button(onClick = { refresh() }, modifier = Modifier.fillMaxWidth()) {
             Text("Re-check capabilities")
         }
+        Button(
+            onClick = {
+                syncStatus = "Syncing…"
+                scope.launch {
+                    val result = runCatching {
+                        agent.checkin()
+                        var count = 0
+                        agent.drainPendingCommands { ack ->
+                            count++
+                            agent.sendAck(ack)
+                        }
+                        count
+                    }
+                    syncStatus = result.fold(
+                        onSuccess = { "Sync OK — ran $it queued command(s)" },
+                        onFailure = { "Sync failed: ${it.message ?: it.javaClass.simpleName}" },
+                    )
+                    caps = agent.capabilities()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Sync now (run queued commands)") }
+        syncStatus?.let { Text(it) }
         Button(onClick = onUnenroll, modifier = Modifier.fillMaxWidth()) { Text("Unenroll") }
     }
 }
