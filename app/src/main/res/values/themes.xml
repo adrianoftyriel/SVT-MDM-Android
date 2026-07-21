@@ -1,0 +1,4 @@
+<resources>
+    <!-- Compose supplies the real UI styling; this is just the app shell theme. -->
+    <style name="Theme.SvtMdm" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
