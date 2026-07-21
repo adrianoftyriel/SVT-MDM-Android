@@ -37,6 +37,21 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // HiveMQ pulls in several Netty jars that each ship duplicate META-INF
+    // metadata files; drop them so the APK packager can merge cleanly.
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES",
+                "META-INF/io.netty.versions.properties",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/*.kotlin_module",
+            )
+        }
+    }
 }
 
 dependencies {
