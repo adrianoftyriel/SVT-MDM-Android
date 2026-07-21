@@ -35,12 +35,13 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+      # Release build: non-debuggable, signed with the committed stable key.
+      - name: Build release APK
+        run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: svt-mdm-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: svt-mdm-apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
