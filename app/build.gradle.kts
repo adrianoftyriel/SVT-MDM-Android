@@ -13,13 +13,29 @@ android {
         applicationId = "org.svt.mdm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.2.1"
+    }
+
+    signingConfigs {
+        // A stable, committed signing key so every CI build is signed
+        // identically and can update a previously-installed APK in place.
+        // This is a self-signed sideloading key, not a Play Store key.
+        create("shared") {
+            storeFile = file("svt-signing.jks")
+            storePassword = "svtmdm123"
+            keyAlias = "svtmdm"
+            keyPassword = "svtmdm123"
+        }
     }
 
     buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("shared")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("shared")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
