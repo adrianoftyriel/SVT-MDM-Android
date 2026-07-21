@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <!-- Force the device to lock immediately (requires existing credential). -->
+        <force-lock />
+        <!-- Factory reset. -->
+        <wipe-data />
+        <!-- Password policy hooks. Note: setting a NEW password from here is
+             non-functional on Android 11+ unless the app is Device Owner
+             (see Phase 3). Declared so the capability is available where the
+             OS still honours it. -->
+        <limit-password />
+        <watch-login />
+        <reset-password />
+    </uses-policies>
+</device-admin>

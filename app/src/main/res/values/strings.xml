@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">SVT MDM</string>
+    <string name="device_admin_label">SVT MDM Device Administration</string>
+    <string name="device_admin_description">Allows the MDM server to lock or factory-reset this device when requested by its owner.</string>
+    <string name="agent_channel_name">Device management</string>
+    <string name="agent_notification_title">Device management active</string>
+    <string name="agent_notification_text">Reporting to your MDM server.</string>
+</resources>
