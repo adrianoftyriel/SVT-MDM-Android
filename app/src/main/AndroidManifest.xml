@@ -65,6 +65,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- Required provisioning activities for a DPC targeting API 29+. -->
+        <activity
+            android:name=".admin.ProvisioningActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.app.action.GET_PROVISIONING_MODE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.app.action.ADMIN_POLICY_COMPLIANCE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Long-lived agent service: MQTT command channel + location stream. -->
         <service
             android:name=".service.AgentService"
