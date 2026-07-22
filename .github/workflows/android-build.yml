@@ -54,9 +54,13 @@ jobs:
           v=$(grep -m1 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
-      - name: Stage versioned APK
+      - name: Stage APKs
         if: github.ref == 'refs/heads/main'
-        run: cp app/build/outputs/apk/release/app-release.apk "svt-mdm-${{ steps.ver.outputs.version }}.apk"
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "svt-mdm-${{ steps.ver.outputs.version }}.apk"
+          # Stable filename so /releases/latest/download/svt-mdm-latest.apk works
+          # (used by the Device Owner QR provisioning download URL).
+          cp app/build/outputs/apk/release/app-release.apk "svt-mdm-latest.apk"
 
       - name: Publish Release
         if: github.ref == 'refs/heads/main'
@@ -64,7 +68,9 @@ jobs:
         with:
           tag_name: "v${{ steps.ver.outputs.version }}"
           name: "SVT MDM ${{ steps.ver.outputs.version }}"
-          files: "svt-mdm-${{ steps.ver.outputs.version }}.apk"
+          files: |
+            svt-mdm-${{ steps.ver.outputs.version }}.apk
+            svt-mdm-latest.apk
           fail_on_unmatched_files: true
           make_latest: true
           body: |

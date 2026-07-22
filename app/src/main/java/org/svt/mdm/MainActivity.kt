@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,28 +55,52 @@ private fun AppRoot() {
     val agent = remember { Agent(context) }
     var enrolled by remember { mutableStateOf(agent.session.isEnrolled) }
 
+    // As Device Owner, silently grant permissions / set the reset-password
+    // token as soon as the app opens.
+    LaunchedEffect(Unit) { runCatching { if (agent.isDeviceOwner()) agent.provisionSelf() } }
+
     if (enrolled) {
         StatusScreen(agent, onUnenroll = {
             agent.session.clear()
             enrolled = false
         })
     } else {
-        // Don't auto-start the location foreground service here: on Android 14+
-        // starting a location-typed FGS before the location permission is
-        // granted throws. The user starts it from the Status screen after
-        // granting permissions.
-        EnrollmentScreen(agent, onEnrolled = { enrolled = true })
+        EnrollmentScreen(agent, onEnrolled = {
+            agent.session.clearPendingProvisioning()
+            enrolled = true
+        })
     }
 }
 
 @Composable
 private fun EnrollmentScreen(agent: Agent, onEnrolled: () -> Unit) {
-    var serverUrl by remember { mutableStateOf("") }
-    var token by remember { mutableStateOf("") }
-    var secret by remember { mutableStateOf("") }
+    // Pre-fill from a QR provisioning hand-off when present.
+    var serverUrl by remember { mutableStateOf(agent.session.pendingServerUrl ?: "") }
+    var token by remember { mutableStateOf(agent.session.pendingEnrollToken ?: "") }
+    var secret by remember { mutableStateOf(agent.session.pendingSecret ?: "") }
     var status by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    fun doEnroll() {
+        busy = true
+        status = "Enrolling…"
+        scope.launch {
+            val result = agent.enroll(serverUrl.trim(), token.trim(), secret.trim())
+            busy = false
+            result.onSuccess { onEnrolled() }
+                .onFailure { status = "Failed: ${it.message}" }
+        }
+    }
+
+    // Auto-enroll once if a provisioning hand-off pre-filled everything.
+    LaunchedEffect(Unit) {
+        if (!agent.session.pendingEnrollToken.isNullOrBlank() &&
+            !agent.session.pendingServerUrl.isNullOrBlank()
+        ) {
+            doEnroll()
+        }
+    }
 
     Column(
         Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
@@ -99,16 +124,7 @@ private fun EnrollmentScreen(agent: Agent, onEnrolled: () -> Unit) {
         )
         Button(
             enabled = !busy && serverUrl.isNotBlank() && token.isNotBlank(),
-            onClick = {
-                busy = true
-                status = "Enrolling…"
-                scope.launch {
-                    val result = agent.enroll(serverUrl.trim(), token.trim(), secret.trim())
-                    busy = false
-                    result.onSuccess { onEnrolled() }
-                        .onFailure { status = "Failed: ${it.message}" }
-                }
-            },
+            onClick = { doEnroll() },
         ) { Text("Enroll") }
         status?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }

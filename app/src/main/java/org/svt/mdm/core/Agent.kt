@@ -68,8 +68,15 @@ class Agent(private val context: Context) {
             )
         )
         session.save(serverUrl, response.deviceId, response.deviceToken, response.mqtt)
+        // As Device Owner, silently grant permissions and set up the
+        // reset-password token so set_password works.
+        runCatching { controller.provisionSelf() }
         response
     }
+
+    fun isDeviceOwner(): Boolean = controller.isDeviceOwner
+
+    fun provisionSelf() = controller.provisionSelf()
 
     // -- telemetry ------------------------------------------------------------
 

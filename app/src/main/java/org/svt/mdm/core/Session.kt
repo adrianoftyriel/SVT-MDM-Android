@@ -64,10 +64,47 @@ class Session(context: Context) {
 
     fun clear() = prefs.edit().clear().apply()
 
+    /** Device Owner reset-password token (32 bytes), base64-encoded at rest. */
+    var resetPasswordToken: ByteArray?
+        get() = prefs.getString(KEY_RESET_TOKEN, null)
+            ?.let { android.util.Base64.decode(it, android.util.Base64.NO_WRAP) }
+        set(value) {
+            val encoded = value?.let {
+                android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP)
+            }
+            prefs.edit().putString(KEY_RESET_TOKEN, encoded).apply()
+        }
+
+    // --- QR provisioning hand-off (values passed via the admin extras bundle) ---
+
+    val pendingServerUrl: String? get() = prefs.getString(KEY_PENDING_URL, null)
+    val pendingEnrollToken: String? get() = prefs.getString(KEY_PENDING_TOKEN, null)
+    val pendingSecret: String? get() = prefs.getString(KEY_PENDING_SECRET, null)
+
+    fun savePendingProvisioning(serverUrl: String?, enrollToken: String?, secret: String?) {
+        prefs.edit()
+            .putString(KEY_PENDING_URL, serverUrl)
+            .putString(KEY_PENDING_TOKEN, enrollToken)
+            .putString(KEY_PENDING_SECRET, secret)
+            .apply()
+    }
+
+    fun clearPendingProvisioning() {
+        prefs.edit()
+            .remove(KEY_PENDING_URL)
+            .remove(KEY_PENDING_TOKEN)
+            .remove(KEY_PENDING_SECRET)
+            .apply()
+    }
+
     private companion object {
         const val KEY_SERVER_URL = "server_url"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_DEVICE_TOKEN = "device_token"
         const val KEY_MQTT = "mqtt"
+        const val KEY_RESET_TOKEN = "reset_password_token"
+        const val KEY_PENDING_URL = "pending_server_url"
+        const val KEY_PENDING_TOKEN = "pending_enroll_token"
+        const val KEY_PENDING_SECRET = "pending_secret"
     }
 }
