@@ -111,3 +111,37 @@ data class OkResponse(
     val tier: String? = null,
     val count: Int? = null,
 )
+
+// --- Backups -----------------------------------------------------------------
+
+@Serializable
+data class BackupFileMeta(
+    val sha256: String,
+    val size: Long = 0,
+    @SerialName("rel_path") val relPath: String,
+    val category: String = "file",
+    val mtime: String? = null,
+)
+
+@Serializable
+data class ManifestRequest(val files: List<BackupFileMeta> = emptyList())
+
+@Serializable
+data class ManifestResponse(val missing: List<String> = emptyList())
+
+@Serializable
+data class RunStartResponse(@SerialName("run_id") val runId: String)
+
+@Serializable
+data class RunCompleteRequest(
+    @SerialName("file_count") val fileCount: Int = 0,
+    @SerialName("total_bytes") val totalBytes: Long = 0,
+    val status: String = "complete",
+)
+
+@Serializable
+data class UploadResponse(
+    val stored: Boolean = false,
+    val deduped: Boolean = false,
+    val size: Long = 0,
+)

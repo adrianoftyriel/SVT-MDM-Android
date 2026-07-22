@@ -7,6 +7,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
+import org.svt.mdm.work.BackupWorker
 import org.svt.mdm.work.TelemetryWorker
 
 class MdmApp : Application() {
@@ -14,6 +15,7 @@ class MdmApp : Application() {
     override fun onCreate() {
         super.onCreate()
         scheduleTelemetry()
+        scheduleBackup()
     }
 
     private fun scheduleTelemetry() {
@@ -26,6 +28,22 @@ class MdmApp : Application() {
             .build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             TelemetryWorker.UNIQUE_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
+    }
+
+    private fun scheduleBackup() {
+        val request = PeriodicWorkRequestBuilder<BackupWorker>(1, TimeUnit.DAYS)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.UNMETERED)
+                    .setRequiresCharging(true)
+                    .build()
+            )
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            BackupWorker.UNIQUE_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
             request,
         )
