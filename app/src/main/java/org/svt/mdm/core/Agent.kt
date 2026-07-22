@@ -15,6 +15,7 @@ import org.svt.mdm.capability.CapabilityProbe
 import org.svt.mdm.collect.InventoryCollector
 import org.svt.mdm.collect.LocationCollector
 import org.svt.mdm.collect.UsageCollector
+import org.svt.mdm.ring.Ringer
 import org.svt.mdm.transport.ApiClientFactory
 import org.svt.mdm.transport.MdmApi
 import org.svt.mdm.transport.dto.CheckinRequest
@@ -127,6 +128,12 @@ class Agent(private val context: Context) {
                 pushUsage(days); ok(cmd)
             }
             "backup_now" -> { runBackup(); ok(cmd) }
+            "ring" -> {
+                val seconds = (cmd.payload["seconds"]?.jsonPrimitive?.intOrNull ?: 30)
+                    .coerceIn(1, 300)
+                Ringer(context).ring(seconds * 1000L)
+                ok(cmd)
+            }
             else -> failed(cmd, "unknown command type: ${cmd.type}")
         }
     } catch (e: Exception) {
