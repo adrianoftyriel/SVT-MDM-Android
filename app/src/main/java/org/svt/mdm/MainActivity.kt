@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
 import org.svt.mdm.admin.MdmDeviceAdminReceiver
 import org.svt.mdm.core.Agent
 import org.svt.mdm.service.AgentService
+import org.svt.mdm.update.UpdateManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,6 +144,9 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
     }
 
     var backupStatus by remember { mutableStateOf<String?>(null) }
+    var updateStatus by remember { mutableStateOf<String?>(null) }
+    var availableUpdate by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
+    val updater = remember { UpdateManager(context) }
 
     val locationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -280,6 +284,41 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Back up now") }
         backupStatus?.let { Text(it) }
+
+        Button(
+            onClick = {
+                updateStatus = "Checking…"
+                availableUpdate = null
+                scope.launch {
+                    runCatching { updater.check() }.fold(
+                        onSuccess = { info ->
+                            if (info == null) {
+                                updateStatus = "Up to date (v${updater.currentVersion})"
+                            } else {
+                                availableUpdate = info
+                                updateStatus = "Update available: v${info.latest} (installed v${info.current})"
+                            }
+                        },
+                        onFailure = { updateStatus = "Update check failed: ${it.message}" },
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Check for updates") }
+        availableUpdate?.let { info ->
+            Button(
+                onClick = {
+                    updateStatus = "Downloading & installing…"
+                    scope.launch {
+                        runCatching { updater.downloadAndInstall(info) }
+                            .onFailure { updateStatus = "Update failed: ${it.message}" }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Download & install v${info.latest}") }
+        }
+        updateStatus?.let { Text(it) }
+
         Button(onClick = onUnenroll, modifier = Modifier.fillMaxWidth()) { Text("Unenroll") }
     }
 }
