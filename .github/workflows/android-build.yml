@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # needed to create/update Releases
 
 concurrency:
   group: android-build-${{ github.ref }}
@@ -45,3 +45,31 @@ jobs:
           name: svt-mdm-apk
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+      # Publish a GitHub Release with the APK (only for main builds).
+      - name: Read app version
+        if: github.ref == 'refs/heads/main'
+        id: ver
+        run: |
+          v=$(grep -m1 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Stage versioned APK
+        if: github.ref == 'refs/heads/main'
+        run: cp app/build/outputs/apk/release/app-release.apk "svt-mdm-${{ steps.ver.outputs.version }}.apk"
+
+      - name: Publish Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.ver.outputs.version }}"
+          name: "SVT MDM ${{ steps.ver.outputs.version }}"
+          files: "svt-mdm-${{ steps.ver.outputs.version }}.apk"
+          fail_on_unmatched_files: true
+          make_latest: true
+          body: |
+            Android agent for SVT MDM, version ${{ steps.ver.outputs.version }}.
+
+            Signed with the project's sideloading key (installs over previous
+            versions in place). Not a Play Store build — sideload onto devices
+            you own. See `provisioning/` for setup.
