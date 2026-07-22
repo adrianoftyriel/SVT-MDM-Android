@@ -30,7 +30,16 @@ class DevicePolicyController(private val context: Context) {
     /** Factory reset. Irreversible. */
     fun wipe() {
         require(isAdminActive) { "Device admin not active" }
-        dpm.wipeData(0)
+        // wipeData() wipes "the user the admin runs on". On a Device Owner in
+        // headless system user mode (Android 14+) that user is the system user
+        // (user 0), which the framework refuses to remove ("User 0 is a system
+        // user and cannot be removed"). wipeDevice() (API 34) factory-resets the
+        // whole device from a Device Owner and is the correct call there.
+        if (isDeviceOwner && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            dpm.wipeDevice(0)
+        } else {
+            dpm.wipeData(0)
+        }
     }
 
     /**
