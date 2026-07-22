@@ -13,8 +13,8 @@ android {
         applicationId = "org.svt.mdm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.6.0"
+        versionCode = 8
+        versionName = "0.6.1"
     }
 
     signingConfigs {
@@ -26,6 +26,12 @@ android {
             storePassword = "svtmdm123"
             keyAlias = "svtmdm"
             keyPassword = "svtmdm123"
+            // v1 (JAR) signing is off by default for minSdk >= 24, but Android's
+            // Device Owner provisioning verifier needs it to validate the
+            // downloaded APK — without it, QR provisioning fails with
+            // "Something went wrong". Keep v2/v3 as well.
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
 
