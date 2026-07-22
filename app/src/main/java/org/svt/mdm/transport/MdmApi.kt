@@ -5,6 +5,7 @@ import org.svt.mdm.transport.dto.CheckinRequest
 import org.svt.mdm.transport.dto.CommandAck
 import org.svt.mdm.transport.dto.EnrollRequest
 import org.svt.mdm.transport.dto.EnrollResponse
+import org.svt.mdm.transport.dto.BackupConfigResponse
 import org.svt.mdm.transport.dto.InventoryRequest
 import org.svt.mdm.transport.dto.LocationRequest
 import org.svt.mdm.transport.dto.ManifestRequest
@@ -49,6 +50,9 @@ interface MdmApi {
     suspend fun ackCommand(@Body body: CommandAck): OkResponse
 
     // --- Backups ---
+    @GET("api/backup/config")
+    suspend fun backupConfig(): BackupConfigResponse
+
     @POST("api/backup/run")
     suspend fun backupStart(): RunStartResponse
 

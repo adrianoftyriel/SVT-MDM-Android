@@ -19,8 +19,23 @@ class BackupManager(private val context: Context, private val api: MdmApi) {
     private val enumerator = MediaEnumerator(context)
     private val shaCache = ShaCache(context)
 
+    // Defaults match the server's (media + contacts) if the config fetch fails.
+    private val defaultCategories = mapOf(
+        "media" to true, "contacts" to true,
+        "sms" to false, "calllog" to false, "calendar" to false,
+    )
+
     suspend fun run(): BackupSummary {
-        val entries = enumerator.enumerate()
+        val categories = runCatching { api.backupConfig().categories }.getOrDefault(emptyMap())
+        fun on(cat: String) = categories[cat] ?: defaultCategories[cat] ?: false
+
+        val entries = mutableListOf<BackupEntry>()
+        if (on("media")) entries += enumerator.media()
+        if (on("contacts")) enumerator.contacts()?.let { entries += it }
+        if (on("sms")) SmsCollector(context).export()?.let { entries += it }
+        if (on("calllog")) CallLogCollector(context).export()?.let { entries += it }
+        if (on("calendar")) CalendarCollector(context).export()?.let { entries += it }
+
         val resolver = context.contentResolver
 
         // Compute (meta, entry) pairs, reusing cached hashes where possible.

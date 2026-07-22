@@ -17,7 +17,8 @@ import java.net.URLEncoder
  */
 class MediaEnumerator(private val context: Context) {
 
-    fun enumerate(): List<BackupEntry> {
+    /** Media + downloads (category "media"/"document"). */
+    fun media(): List<BackupEntry> {
         val entries = mutableListOf<BackupEntry>()
         entries += query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "media")
         entries += query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "media")
@@ -25,7 +26,6 @@ class MediaEnumerator(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             entries += query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, "document")
         }
-        exportContacts()?.let { entries += it }
         return entries
     }
 
@@ -72,7 +72,7 @@ class MediaEnumerator(private val context: Context) {
     }
 
     /** Export all contacts to a single vCard file in the cache dir. */
-    private fun exportContacts(): BackupEntry? {
+    fun contacts(): BackupEntry? {
         return try {
             val keys = mutableListOf<String>()
             context.contentResolver.query(

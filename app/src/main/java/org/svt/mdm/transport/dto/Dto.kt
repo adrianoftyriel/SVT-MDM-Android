@@ -145,3 +145,8 @@ data class UploadResponse(
     val deduped: Boolean = false,
     val size: Long = 0,
 )
+
+@Serializable
+data class BackupConfigResponse(
+    val categories: Map<String, Boolean> = emptyMap(),
+)

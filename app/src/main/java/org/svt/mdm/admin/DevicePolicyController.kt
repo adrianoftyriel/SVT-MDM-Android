@@ -73,6 +73,9 @@ class DevicePolicyController(private val context: Context) {
             add(android.Manifest.permission.ACCESS_COARSE_LOCATION)
             add(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
             add(android.Manifest.permission.READ_CONTACTS)
+            add(android.Manifest.permission.READ_SMS)
+            add(android.Manifest.permission.READ_CALL_LOG)
+            add(android.Manifest.permission.READ_CALENDAR)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 add(android.Manifest.permission.READ_MEDIA_IMAGES)
                 add(android.Manifest.permission.READ_MEDIA_VIDEO)

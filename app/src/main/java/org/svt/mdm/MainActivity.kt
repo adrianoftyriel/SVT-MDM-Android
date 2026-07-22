@@ -207,6 +207,9 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
                         add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
                     }
                     add(android.Manifest.permission.READ_CONTACTS)
+                    add(android.Manifest.permission.READ_SMS)
+                    add(android.Manifest.permission.READ_CALL_LOG)
+                    add(android.Manifest.permission.READ_CALENDAR)
                 }.toTypedArray()
                 backupLauncher.launch(perms)
             },
