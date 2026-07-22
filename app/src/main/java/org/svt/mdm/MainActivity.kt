@@ -126,7 +126,13 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
         }.getOrNull() ?: "?"
     }
 
+    var backupStatus by remember { mutableStateOf<String?>(null) }
+
     val locationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { caps = agent.capabilities() }
+
+    val backupLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { caps = agent.capabilities() }
 
@@ -169,6 +175,23 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
             onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Grant usage access") }
+
+        Button(
+            onClick = {
+                val perms = buildList {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        add(android.Manifest.permission.READ_MEDIA_IMAGES)
+                        add(android.Manifest.permission.READ_MEDIA_VIDEO)
+                        add(android.Manifest.permission.READ_MEDIA_AUDIO)
+                    } else {
+                        add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                    }
+                    add(android.Manifest.permission.READ_CONTACTS)
+                }.toTypedArray()
+                backupLauncher.launch(perms)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Grant backup access (media & contacts)") }
 
         Button(
             onClick = {
@@ -227,6 +250,20 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Sync now (run queued commands)") }
         syncStatus?.let { Text(it) }
+        Button(
+            onClick = {
+                backupStatus = "Backing up… (this can take a while)"
+                scope.launch {
+                    val result = runCatching { agent.runBackup() }
+                    backupStatus = result.fold(
+                        onSuccess = { "Backup OK — ${it.fileCount} files, ${it.uploaded} uploaded" },
+                        onFailure = { "Backup failed: ${it.message ?: it.javaClass.simpleName}" },
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Back up now") }
+        backupStatus?.let { Text(it) }
         Button(onClick = onUnenroll, modifier = Modifier.fillMaxWidth()) { Text("Unenroll") }
     }
 }

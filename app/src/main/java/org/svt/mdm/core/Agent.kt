@@ -9,6 +9,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import org.svt.mdm.admin.DevicePolicyController
+import org.svt.mdm.backup.BackupManager
+import org.svt.mdm.backup.BackupSummary
 import org.svt.mdm.capability.CapabilityProbe
 import org.svt.mdm.collect.InventoryCollector
 import org.svt.mdm.collect.LocationCollector
@@ -101,6 +103,8 @@ class Agent(private val context: Context) {
         api().usage(UsageRequest(rangeDays = days, stats = usage.collect(days)))
     }
 
+    suspend fun runBackup(): BackupSummary = BackupManager(context, api()).run()
+
     // -- command dispatch -----------------------------------------------------
 
     suspend fun handleCommand(cmd: Command): CommandAck = try {
@@ -122,6 +126,7 @@ class Agent(private val context: Context) {
                 val days = cmd.payload["days"]?.jsonPrimitive?.intOrNull ?: 7
                 pushUsage(days); ok(cmd)
             }
+            "backup_now" -> { runBackup(); ok(cmd) }
             else -> failed(cmd, "unknown command type: ${cmd.type}")
         }
     } catch (e: Exception) {

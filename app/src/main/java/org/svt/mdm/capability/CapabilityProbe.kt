@@ -31,7 +31,22 @@ class CapabilityProbe(private val context: Context) {
             "usage_access" to hasUsageAccess(),
             "location" to hasLocation(),
             "query_all_packages" to canQueryPackages(),
+            "backup" to hasMediaAccess(),
         )
+    }
+
+    private fun hasMediaAccess(): Boolean {
+        val perms = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            listOf(
+                android.Manifest.permission.READ_MEDIA_IMAGES,
+                android.Manifest.permission.READ_MEDIA_VIDEO,
+            )
+        } else {
+            listOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+        return perms.any {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
     }
 
     private fun hasLocation(): Boolean =
