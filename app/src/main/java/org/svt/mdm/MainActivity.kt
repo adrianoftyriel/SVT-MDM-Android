@@ -21,7 +21,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,31 +36,52 @@ import kotlinx.coroutines.launch
 import org.svt.mdm.admin.MdmDeviceAdminReceiver
 import org.svt.mdm.core.Agent
 import org.svt.mdm.service.AgentService
+import org.svt.mdm.ui.theme.Themes
 import org.svt.mdm.update.UpdateManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
-                AppRoot()
+            val context = LocalContext.current
+            val agent = remember { Agent(context) }
+            // The interface theme is chosen on the server and mirrored here.
+            var themeId by remember { mutableStateOf(agent.session.themeId) }
+            val theme = Themes.get(themeId)
+
+            // Refresh the theme from the server whenever the app is enrolled.
+            LaunchedEffect(Unit) {
+                if (agent.session.isEnrolled) {
+                    runCatching { agent.fetchTheme() }
+                    themeId = agent.session.themeId
+                }
+            }
+
+            MaterialTheme(colorScheme = theme.colorScheme, typography = theme.typography()) {
+                AppRoot(agent, onThemeChanged = { themeId = agent.session.themeId })
             }
         }
     }
 }
 
 @Composable
-private fun AppRoot() {
-    val context = LocalContext.current
-    val agent = remember { Agent(context) }
+private fun AppRoot(agent: Agent, onThemeChanged: () -> Unit) {
     var enrolled by remember { mutableStateOf(agent.session.isEnrolled) }
 
     // As Device Owner, silently grant permissions / set the reset-password
     // token as soon as the app opens.
     LaunchedEffect(Unit) { runCatching { if (agent.isDeviceOwner()) agent.provisionSelf() } }
 
+    // Once enrolled, pull the operator-selected theme.
+    LaunchedEffect(enrolled) {
+        if (enrolled) {
+            runCatching { agent.fetchTheme() }
+            onThemeChanged()
+        }
+    }
+
     if (enrolled) {
-        StatusScreen(agent, onUnenroll = {
+        StatusScreen(agent, onThemeChanged = onThemeChanged, onUnenroll = {
             agent.session.clear()
             enrolled = false
         })
@@ -132,7 +152,7 @@ private fun EnrollmentScreen(agent: Agent, onEnrolled: () -> Unit) {
 }
 
 @Composable
-private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
+private fun StatusScreen(agent: Agent, onThemeChanged: () -> Unit, onUnenroll: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var caps by remember { mutableStateOf(agent.capabilities()) }
@@ -158,7 +178,10 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
 
     fun refresh() {
         caps = agent.capabilities()
-        scope.launch { runCatching { agent.checkin() } }
+        scope.launch {
+            runCatching { agent.checkin() }
+            onThemeChanged()
+        }
     }
 
     Column(
@@ -171,6 +194,7 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
                 Text("App version: $appVersion")
                 Text("Device ID: ${agent.session.deviceId ?: "—"}", fontFamily = FontFamily.Monospace)
                 Text("Server: ${agent.session.serverUrl ?: "—"}")
+                Text("Theme: ${Themes.get(agent.session.themeId).displayName}")
                 Text("Tier: ${tierOf(caps)}", style = MaterialTheme.typography.titleMedium)
                 caps.forEach { (k, v) -> Text("• $k: ${if (v) "yes" else "no"}") }
             }
@@ -268,6 +292,7 @@ private fun StatusScreen(agent: Agent, onUnenroll: () -> Unit) {
                         onFailure = { "Sync failed: ${it.message ?: it.javaClass.simpleName}" },
                     )
                     caps = agent.capabilities()
+                    onThemeChanged()
                 }
             },
             modifier = Modifier.fillMaxWidth(),

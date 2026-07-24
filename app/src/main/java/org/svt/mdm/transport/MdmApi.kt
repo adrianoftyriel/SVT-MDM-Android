@@ -14,6 +14,7 @@ import org.svt.mdm.transport.dto.OkResponse
 import org.svt.mdm.transport.dto.PendingCommands
 import org.svt.mdm.transport.dto.RunCompleteRequest
 import org.svt.mdm.transport.dto.RunStartResponse
+import org.svt.mdm.transport.dto.ThemeResponse
 import org.svt.mdm.transport.dto.UploadResponse
 import org.svt.mdm.transport.dto.UsageRequest
 import retrofit2.http.Body
@@ -42,6 +43,9 @@ interface MdmApi {
 
     @POST("api/telemetry/usage")
     suspend fun usage(@Body body: UsageRequest): OkResponse
+
+    @GET("api/theme")
+    suspend fun theme(): ThemeResponse
 
     @GET("api/commands/pending")
     suspend fun pendingCommands(): PendingCommands

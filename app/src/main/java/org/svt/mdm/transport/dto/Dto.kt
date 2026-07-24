@@ -110,6 +110,18 @@ data class OkResponse(
     val ok: Boolean = true,
     val tier: String? = null,
     val count: Int? = null,
+    // Active interface theme id, echoed on check-in so the agent can restyle.
+    val theme: String? = null,
+)
+
+/** Full active-theme token set from `GET /api/theme`. */
+@Serializable
+data class ThemeResponse(
+    val id: String,
+    val name: String = "",
+    val dark: Boolean = true,
+    val font: String = "system",
+    val colors: Map<String, String> = emptyMap(),
 )
 
 // --- Backups -----------------------------------------------------------------

@@ -81,7 +81,7 @@ class Agent(private val context: Context) {
     // -- telemetry ------------------------------------------------------------
 
     suspend fun checkin() {
-        api().checkin(
+        val response = api().checkin(
             CheckinRequest(
                 battery = readBattery(),
                 osVersion = Build.VERSION.RELEASE,
@@ -89,6 +89,16 @@ class Agent(private val context: Context) {
                 capabilities = probe.probe(),
             )
         )
+        // The server echoes the operator-selected interface theme; persist it
+        // so the UI can restyle to match the dashboard.
+        response.theme?.let { session.themeId = it }
+    }
+
+    /** Fetch the active interface theme id from the server. */
+    suspend fun fetchTheme(): String {
+        val theme = api().theme()
+        session.themeId = theme.id
+        return theme.id
     }
 
     suspend fun pushLocation() {

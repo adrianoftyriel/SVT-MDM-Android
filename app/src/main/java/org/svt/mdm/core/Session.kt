@@ -50,6 +50,11 @@ class Session(context: Context) {
             prefs.edit().putString(KEY_MQTT, encoded).apply()
         }
 
+    /** Operator-selected interface theme id (see server `app/themes.py`). */
+    var themeId: String?
+        get() = prefs.getString(KEY_THEME, null)
+        set(value) = prefs.edit().putString(KEY_THEME, value).apply()
+
     val isEnrolled: Boolean
         get() = !deviceToken.isNullOrBlank() && !serverUrl.isNullOrBlank()
 
@@ -103,6 +108,7 @@ class Session(context: Context) {
         const val KEY_DEVICE_TOKEN = "device_token"
         const val KEY_MQTT = "mqtt"
         const val KEY_RESET_TOKEN = "reset_password_token"
+        const val KEY_THEME = "theme_id"
         const val KEY_PENDING_URL = "pending_server_url"
         const val KEY_PENDING_TOKEN = "pending_enroll_token"
         const val KEY_PENDING_SECRET = "pending_secret"
