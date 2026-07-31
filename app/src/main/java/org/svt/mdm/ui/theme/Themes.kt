@@ -168,6 +168,24 @@ object Themes {
             ok = "#6a8a3f", warn = "#b9822b", danger = "#b23a2f", border = "#ddcca6",
         ),
         appTheme(
+            "blueprint", "Blueprint", dark = false, font = AppTheme.Font.SYSTEM,
+            bg = "#f5f8fc", panel = "#ffffff", panel2 = "#e9eff7", text = "#0f1b2d",
+            muted = "#5a6b84", accent = "#2563eb", accentText = "#ffffff",
+            ok = "#0f7b52", warn = "#9a6a00", danger = "#c62b3f", border = "#d3dfec",
+        ),
+        appTheme(
+            "plainsight", "Plainsight", dark = false, font = AppTheme.Font.SYSTEM,
+            bg = "#fafafa", panel = "#ffffff", panel2 = "#f4f4f5", text = "#111113",
+            muted = "#6b6b73", accent = "#4f46e5", accentText = "#ffffff",
+            ok = "#157f3d", warn = "#8a5a00", danger = "#c1121f", border = "#e2e2e6",
+        ),
+        appTheme(
+            "sprout", "Sprout", dark = true, font = AppTheme.Font.SYSTEM,
+            bg = "#121417", panel = "#1b1e22", panel2 = "#24282d", text = "#e6e8ea",
+            muted = "#9aa0a6", accent = "#3ddc84", accentText = "#06210f",
+            ok = "#2eb872", warn = "#ffc107", danger = "#ff5252", border = "#2f343a",
+        ),
+        appTheme(
             "lcars", "LCARS", dark = true, font = AppTheme.Font.CONDENSED,
             bg = "#000000", panel = "#0b0b0b", panel2 = "#161616", text = "#ffcc99",
             muted = "#cc99cc", accent = "#ff9900", accentText = "#000000",
