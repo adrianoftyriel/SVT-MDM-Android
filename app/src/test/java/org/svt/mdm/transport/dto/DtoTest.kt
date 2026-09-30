@@ -33,9 +33,9 @@ class DtoTest {
         val decoded = json.decodeFromString(EnrollRequest.serializer(), encoded)
         assertEquals(req, decoded)
         // Verify wire field names
-        assertTrue(encoded.contains(""enroll_token":"tok123""))
-        assertTrue(encoded.contains(""enrollment_secret":"s3cret""))
-        assertTrue(encoded.contains(""os_version":"14""))
+        assertTrue(encoded.contains("\"enroll_token\":\"tok123\""))
+        assertTrue(encoded.contains("\"enrollment_secret\":\"s3cret\""))
+        assertTrue(encoded.contains("\"os_version\":\"14\""))
     }
 
     @Test
@@ -78,9 +78,9 @@ class DtoTest {
             statusTopic = "mdm/u/status",
         )
         val encoded = json.encodeToString(MqttInfo.serializer(), info)
-        assertTrue(encoded.contains(""cmd_topic":"mdm/u/cmd""))
-        assertTrue(encoded.contains(""ack_topic":"mdm/u/ack""))
-        assertTrue(encoded.contains(""status_topic":"mdm/u/status""))
+        assertTrue(encoded.contains("\"cmd_topic\":\"mdm/u/cmd\""))
+        assertTrue(encoded.contains("\"ack_topic\":\"mdm/u/ack\""))
+        assertTrue(encoded.contains("\"status_topic\":\"mdm/u/status\""))
     }
 
     @Test
