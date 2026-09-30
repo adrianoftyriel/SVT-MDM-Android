@@ -87,12 +87,13 @@ class BackupManagerTest {
 
     @Test
     fun shaCacheKeyFormat() {
-        // The cache key format is "||"
-        val relPath = "DCIM/photo.jpg"
-        val size = 1024L
-        val mtimeMs = 1695000000000L
-        val key = "||"
-        assertEquals("DCIM/photo.jpg|1024|1695000000000", key)
+        val entry = BackupEntry(
+            relPath = "DCIM/photo.jpg",
+            size = 1024L,
+            mtimeMs = 1695000000000L,
+            category = "media",
+        )
+        assertEquals("DCIM/photo.jpg|1024|1695000000000", entry.cacheKey)
     }
 
     @Test
