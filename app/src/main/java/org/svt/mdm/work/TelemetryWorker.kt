@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import org.svt.mdm.core.Agent
+import retrofit2.HttpException
 
 /**
  * Periodic bulk telemetry: check-in, installed-app inventory, and usage stats.
@@ -25,12 +26,20 @@ class TelemetryWorker(
             runCatching { agent.pushUsage() } // needs usage-access grant; ignore if absent
             agent.drainPendingCommands { ack -> agent.sendAck(ack) }
             Result.success()
+        } catch (e: HttpException) {
+            // A revoked/invalid token (401/403) will not fix itself on retry.
+            if (e.code() == 401 || e.code() == 403) Result.failure() else retryOrGiveUp()
         } catch (e: Exception) {
-            Result.retry()
+            retryOrGiveUp()
         }
     }
 
+    /** Retry transient failures a few times; the next periodic run tries again. */
+    private fun retryOrGiveUp(): Result =
+        if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()
+
     companion object {
+        private const val MAX_ATTEMPTS = 5
         const val UNIQUE_NAME = "svt_mdm_telemetry"
     }
 }

@@ -5,6 +5,17 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+fun signingProp(name: String): String? =
+    (findProperty(name) as String?)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(name)?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile: File? =
+    signingProp("SVT_SIGNING_STORE_FILE")?.let { file(it) }?.takeIf { it.isFile }
+val hasReleaseKey: Boolean = releaseStoreFile != null &&
+    signingProp("SVT_SIGNING_STORE_PASSWORD") != null &&
+    signingProp("SVT_SIGNING_KEY_ALIAS") != null &&
+    signingProp("SVT_SIGNING_KEY_PASSWORD") != null
+
 android {
     namespace = "org.svt.mdm"
     compileSdk = 35
@@ -13,35 +24,37 @@ android {
         applicationId = "org.svt.mdm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.8.2"
+        versionCode = 15
+        versionName = "0.9.0"
     }
 
     signingConfigs {
-        // A stable, committed signing key so every CI build is signed
-        // identically and can update a previously-installed APK in place.
-        // This is a self-signed sideloading key, not a Play Store key.
-        create("shared") {
-            storeFile = file("svt-signing.jks")
-            storePassword = "svtmdm123"
-            keyAlias = "svtmdm"
-            keyPassword = "svtmdm123"
-            // v1 (JAR) signing is off by default for minSdk >= 24, but Android's
-            // Device Owner provisioning verifier needs it to validate the
-            // downloaded APK — without it, QR provisioning fails with
-            // "Something went wrong". Keep v2/v3 as well.
+        // v1 (JAR) signing is off by default for minSdk >= 24, but Android's
+        // Device Owner provisioning verifier needs it to validate the
+        // downloaded APK — without it, QR provisioning fails with
+        // "Something went wrong". Keep v2/v3 as well.
+        getByName("debug") {
             enableV1Signing = true
             enableV2Signing = true
+        }
+        // Release key comes from the environment / gradle properties only and
+        // is never committed. Without it, release builds use the debug key.
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = signingProp("SVT_SIGNING_STORE_PASSWORD")
+                keyAlias = signingProp("SVT_SIGNING_KEY_ALIAS")
+                keyPassword = signingProp("SVT_SIGNING_KEY_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
         }
     }
 
     buildTypes {
-        getByName("debug") {
-            signingConfig = signingConfigs.getByName("shared")
-        }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("shared")
+            signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

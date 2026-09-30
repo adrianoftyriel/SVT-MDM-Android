@@ -57,8 +57,24 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      # Release build: non-debuggable, signed with the committed stable key.
+      # Release build: non-debuggable. Signed with the release key from repo
+      # secrets (SVT_SIGNING_KEYSTORE_B64 = base64 of the .jks, plus
+      # SVT_SIGNING_STORE_PASSWORD / SVT_SIGNING_KEY_ALIAS / SVT_SIGNING_KEY_PASSWORD).
+      # Without the secrets the build falls back to the debug key.
+      - name: Decode release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.SVT_SIGNING_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "SVT_SIGNING_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          fi
+
       - name: Build release APK
+        env:
+          SVT_SIGNING_STORE_PASSWORD: ${{ secrets.SVT_SIGNING_STORE_PASSWORD }}
+          SVT_SIGNING_KEY_ALIAS: ${{ secrets.SVT_SIGNING_KEY_ALIAS }}
+          SVT_SIGNING_KEY_PASSWORD: ${{ secrets.SVT_SIGNING_KEY_PASSWORD }}
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK artifact
@@ -73,8 +89,9 @@ jobs:
         if: github.ref == 'refs/heads/main'
         id: ver
         run: |
-          v=0.8.2
-          echo "version=" >> ""
+          v=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -1)
+          test -n "$v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Stage APKs
         if: github.ref == 'refs/heads/main'

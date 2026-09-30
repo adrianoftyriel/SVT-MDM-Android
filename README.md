@@ -40,6 +40,13 @@ TelemetryWorker (WorkManager) ┤ checkin / inventory / usage ▶ POST /api/tele
 
 - **Instant commands** arrive over MQTT ([HiveMQ client](https://github.com/hivemq/hivemq-mqtt-client));
   a WorkManager job also polls `GET /api/commands/pending` as a fallback.
+- The device token is the MQTT password, so the agent **only connects to a TLS
+  broker** (`tls: true` in the enroll response). With a plain-MQTT broker it
+  skips MQTT and relies on HTTPS polling (a debuggable build pointed at an
+  explicit `http://` server URL is the only exception).
+- Commands are de-duplicated by id (re-delivered commands are re-acked, not
+  re-run), executed one at a time, and `wipe` / `lock` / `set_password` are
+  rejected if issued more than 10 minutes earlier.
 - **Telemetry** is posted over HTTPS.
 - The device token is stored in `EncryptedSharedPreferences`.
 
@@ -71,6 +78,34 @@ gradle wrapper --gradle-version 8.11.1
 ```
 
 Minimum Android 8.0 (API 26); target/compile SDK 35.
+
+### Release signing
+
+No signing key is committed. Debug builds and release builds without a key use
+the default Android debug key. To sign a release with your own key, generate one
+(keep it **out of the repo**):
+
+```bash
+keytool -genkeypair -v -keystore ~/svt-release.jks -alias svtmdm \
+  -keyalg RSA -keysize 4096 -validity 10000
+```
+
+and supply it via environment variables or `~/.gradle/gradle.properties`:
+
+```
+SVT_SIGNING_STORE_FILE=/home/you/svt-release.jks   # absolute path
+SVT_SIGNING_STORE_PASSWORD=...
+SVT_SIGNING_KEY_ALIAS=svtmdm
+SVT_SIGNING_KEY_PASSWORD=...
+```
+
+All four must be set, otherwise the debug key is used. In CI, add repo secrets
+`SVT_SIGNING_KEYSTORE_B64` (`base64 -w0 svt-release.jks`),
+`SVT_SIGNING_STORE_PASSWORD`, `SVT_SIGNING_KEY_ALIAS` and
+`SVT_SIGNING_KEY_PASSWORD`. Every release must use the same key so updates
+install in place. Changing the key changes the signing-certificate checksum
+used for QR provisioning (see `provisioning/device-owner-setup.md`), and
+already-installed agents signed with the old key must be uninstalled first.
 
 > **Note:** this agent is **not** intended for the Play Store — it uses
 > `QUERY_ALL_PACKAGES` and device-admin behaviours Play forbids. It is designed

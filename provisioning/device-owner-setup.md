@@ -21,14 +21,12 @@ Two ways to provision: QR (easiest) or ADB.
    and passes the enrollment details through. The app **auto-enrolls**.
 5. Done — the device reports `device_owner`, and `set_password` is available.
 
-The signing-certificate checksum baked into the server default is:
-
-```
-QGFnYMwe0rezuujokGa9CLb6pJXweG47KqQg6r81ctg
-```
-
-If provisioning ever rejects the APK signature (e.g. after re-keying), recompute
-it from the built APK with:
+The signing-certificate checksum baked into the server default belongs to the
+old, **now-retired** shared key (its private key was published in this repo).
+After you sign releases with your own key (see the README, "Release signing"),
+recompute the checksum and set the server's `do_signature_checksum` option,
+otherwise QR provisioning will reject the APK. Compute it from the built APK
+with:
 
 ```bash
 apksigner verify --print-certs app-release.apk   # "Signer #1 certificate SHA-256 digest"

@@ -42,25 +42,30 @@ class DevicePolicyController(private val context: Context) {
         }
     }
 
+    enum class SetPasswordResult { OK, EMPTY, NOT_DEVICE_OWNER, NO_TOKEN, TOKEN_INACTIVE, REJECTED }
+
     /**
      * Set a new lock password. Device Owner only: uses a reset-password token
-     * established during provisioning. Returns false (with no change) otherwise.
+     * established during provisioning. An empty password is refused because
+     * resetPasswordWithToken("") would remove the lock screen entirely.
      */
-    fun setPassword(password: String): Boolean {
-        if (!isDeviceOwner) return false
+    fun setPassword(password: String): SetPasswordResult {
+        if (password.isEmpty()) return SetPasswordResult.EMPTY
+        if (!isDeviceOwner) return SetPasswordResult.NOT_DEVICE_OWNER
         ensureResetPasswordToken()
-        val token = session.resetPasswordToken ?: return false
+        val token = session.resetPasswordToken ?: return SetPasswordResult.NO_TOKEN
         if (!dpm.isResetPasswordTokenActive(admin)) {
             // The token needs the user to confirm the current credential once
             // before it can be used on a device that already has a lock set.
             Log.w(TAG, "Reset-password token not active; cannot set password yet")
-            return false
+            return SetPasswordResult.TOKEN_INACTIVE
         }
         return try {
-            dpm.resetPasswordWithToken(admin, password, token, 0)
+            if (dpm.resetPasswordWithToken(admin, password, token, 0)) SetPasswordResult.OK
+            else SetPasswordResult.REJECTED
         } catch (e: Exception) {
             Log.w(TAG, "resetPasswordWithToken failed: ${e.message}")
-            false
+            SetPasswordResult.REJECTED
         }
     }
 

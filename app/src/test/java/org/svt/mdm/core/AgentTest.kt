@@ -2,17 +2,19 @@ package org.svt.mdm.core
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.svt.mdm.transport.dto.Command
 import org.svt.mdm.transport.dto.CommandAck
 
 /**
- * Tests the command dispatch logic in Agent.handleCommand.
+ * Tests command payload handling and the command-expiry timestamp parsing used by Agent.processCommand.
  * Verifies command routing, payload validation, and ack/fail responses.
  */
 class AgentTest {
@@ -113,5 +115,22 @@ class AgentTest {
         val cmd = command("unknown_type")
         assertEquals("unknown_type", cmd.type)
         // The agent should return a failed ack for unknown types
+    }
+
+    @Test
+    fun issuedAtParsesZoneSuffixedAndZonelessTimestamps() {
+        val withZ = Agent.parseIssuedAt("2026-09-30T18:13:51.397734Z")
+        val zoneless = Agent.parseIssuedAt("2026-09-30T18:13:51.397734")
+        val withOffset = Agent.parseIssuedAt("2026-09-30T18:13:51+00:00")
+        assertNotNull(withZ)
+        assertEquals(withZ, zoneless)
+        assertEquals(withZ!!.epochSecond, withOffset!!.epochSecond)
+    }
+
+    @Test
+    fun issuedAtToleratesMissingOrGarbage() {
+        assertNull(Agent.parseIssuedAt(null))
+        assertNull(Agent.parseIssuedAt(""))
+        assertNull(Agent.parseIssuedAt("yesterday-ish"))
     }
 }

@@ -7,6 +7,7 @@ import androidx.security.crypto.MasterKey
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.svt.mdm.transport.ApiClientFactory
+import org.svt.mdm.transport.dto.CommandAck
 import org.svt.mdm.transport.dto.MqttInfo
 
 /**
@@ -69,6 +70,20 @@ class Session(context: Context) {
 
     fun clear() = prefs.edit().clear().apply()
 
+    /** Acks of recently executed commands, oldest first, so re-delivery is not re-run. */
+    fun recentAcks(): List<CommandAck> =
+        prefs.getString(KEY_RECENT_ACKS, null)?.let {
+            runCatching { ApiClientFactory.json.decodeFromString<List<CommandAck>>(it) }.getOrNull()
+        } ?: emptyList()
+
+    fun rememberAck(ack: CommandAck) {
+        val updated = (recentAcks().filterNot { it.id == ack.id } + ack).takeLast(MAX_RECENT_ACKS)
+        // commit(), not apply(): a wipe may follow immediately and kill the process.
+        prefs.edit()
+            .putString(KEY_RECENT_ACKS, ApiClientFactory.json.encodeToString(updated))
+            .commit()
+    }
+
     /** Device Owner reset-password token (32 bytes), base64-encoded at rest. */
     var resetPasswordToken: ByteArray?
         get() = prefs.getString(KEY_RESET_TOKEN, null)
@@ -109,6 +124,8 @@ class Session(context: Context) {
         const val KEY_MQTT = "mqtt"
         const val KEY_RESET_TOKEN = "reset_password_token"
         const val KEY_THEME = "theme_id"
+        const val KEY_RECENT_ACKS = "recent_acks"
+        const val MAX_RECENT_ACKS = 50
         const val KEY_PENDING_URL = "pending_server_url"
         const val KEY_PENDING_TOKEN = "pending_enroll_token"
         const val KEY_PENDING_SECRET = "pending_secret"
