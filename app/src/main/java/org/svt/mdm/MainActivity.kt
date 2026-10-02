@@ -35,11 +35,18 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.svt.mdm.admin.MdmDeviceAdminReceiver
 import org.svt.mdm.core.Agent
+import org.svt.mdm.ring.Ringer
 import org.svt.mdm.service.AgentService
 import org.svt.mdm.ui.theme.Themes
 import org.svt.mdm.update.UpdateManager
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        // Opening the app (e.g. from the ring notification) silences a find-my-phone alarm.
+        Ringer.stop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

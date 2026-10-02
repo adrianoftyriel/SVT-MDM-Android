@@ -215,9 +215,10 @@ class Agent(private val context: Context) {
                 "ring" -> {
                     val seconds = (cmd.payload["seconds"]?.jsonPrimitive?.intOrNull ?: 30)
                         .coerceIn(1, 300)
-                    Ringer(context).ring(seconds * 1000L)
+                    Ringer(context).start(seconds * 1000L)
                     Outcome(ok(cmd))
                 }
+                "stop_ring" -> { Ringer.stop(); Outcome(ok(cmd)) }
                 else -> Outcome(failed(cmd, "unknown command type: ${cmd.type}"))
             }
         } catch (e: CancellationException) {

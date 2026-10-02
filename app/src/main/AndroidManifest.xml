@@ -96,6 +96,11 @@
             android:name=".update.InstallReceiver"
             android:exported="false" />
 
+        <!-- "Stop ringing" action on the find-my-phone notification. -->
+        <receiver
+            android:name=".ring.RingStopReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".service.BootReceiver"
             android:exported="true">
